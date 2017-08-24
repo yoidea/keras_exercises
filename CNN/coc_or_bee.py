@@ -1,27 +1,48 @@
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.optimizers import SGD
+from keras.layers import Activation, Dense, Dropout, Conv2D, Flatten, MaxPooling2D
+from keras.optimizers import Adagrad
+from keras.optimizers import Adam
+from keras.utils.np_utils import to_categorical
+from PIL import Image
+import os
 
+batch_size = 25
+num_classes = 2
+epochs = 100
+x_train = []
+y_train = []
 
-x_train = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-y_train = np.array([[0], [1], [1], [0]])
-x_test = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+for file in os.listdir('images/'):
+	label = [0, 0]
+	if file[:3] == 'coc':
+		label = [1, 0]
+	elif file[:3] == 'bee':
+		label = [0, 1]
+	image = Image.open('images/' + file).resize((100, 100))
+	data = np.array(image)
+	print(data)
+	print(data.shape)
+	x_train.append(data / 255)
+	y_train.append(label)
+
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+
+print(x_train.shape)
+print(y_train.shape)
 
 model = Sequential()
-model.add(Dense(2, input_dim=2, activation='sigmoid'))
-model.add(Dense(1, activation='sigmoid'))
+model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(100, 100, 3)))
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
 
-sgd = SGD(lr=0.2, momentum=0.02)
-model.compile(loss='mean_squared_error', optimizer=sgd)
+adam = Adam(lr=0.0001)
+model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
 
-print('Start learning XOR')
-model.fit(x_train, y_train, epochs=2000, batch_size=1)
-predict = model.predict(x_test, batch_size=1)
-print(predict)
-
-print('Save model as model.json')
-json_data = model.to_json()
-open('model.json', 'w').write(json_data)
-print('Save weights as weight.hdf5')
-model.save_weights('weights.hdf5')
+model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs)
