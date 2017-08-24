@@ -15,6 +15,8 @@ y_train = []
 
 for file in os.listdir('images/'):
 	label = [0, 0]
+	if file == '.DS_Store':
+		continue
 	if file[:3] == 'coc':
 		label = [1, 0]
 	elif file[:3] == 'bee':
