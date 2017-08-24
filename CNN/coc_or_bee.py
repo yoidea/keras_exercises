@@ -46,3 +46,19 @@ adam = Adam(lr=0.0001)
 model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
 
 model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs)
+
+# x_test = []
+# image = Image.open('images/coc1.jpg').resize((100, 100))
+# data = np.array(image)
+# x_test.append(data / 255)
+# x_test = np.array(x_test)
+# print(x_test.shape)
+
+# predict = model.predict(x_test, batch_size=25)
+# print(predict)
+
+print('Save model as model.json')
+json_data = model.to_json()
+open('model.json', 'w').write(json_data)
+print('Save weights as weight.hdf5')
+model.save_weights('weights.hdf5')
