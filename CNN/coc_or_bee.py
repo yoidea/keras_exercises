@@ -38,10 +38,6 @@ def load_data():
 	x_train = []
 	y_train = []
 	for file in os.listdir('images/'):
-		# Macで使うための諸事情
-		# if file == '.DS_Store':
-		# 	continue
-		# ラベル判定
 		if file[:3] == 'coc':
 			label = [1, 0]
 		elif file[:3] == 'bee':
