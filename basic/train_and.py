@@ -34,7 +34,7 @@ def main():
 	print('Save model as model.json')
 	json_data = model.to_json()
 	open('model.json', 'w').write(json_data)
-	print('Save weights as weight.hdf5')
+	print('Save weights as weights.hdf5')
 	model.save_weights('weights.hdf5')
 
 
