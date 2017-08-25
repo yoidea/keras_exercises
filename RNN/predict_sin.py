@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import random
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation
 from keras.layers.recurrent import LSTM
