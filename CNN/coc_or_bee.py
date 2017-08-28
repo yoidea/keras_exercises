@@ -56,7 +56,7 @@ def load_data():
 
 
 def main():
-	print('loading datas')
+	print('Loading datas')
 	(x_train, y_train) = load_data()
 	print('Building a model')
 	model = build_model()
