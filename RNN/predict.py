@@ -1,46 +1,45 @@
 import numpy as np
-import math
-import random
 import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.models import model_from_json
-from keras.layers import Activation, Dense, Dropout, Conv2D, Flatten, MaxPooling2D
-from PIL import Image
+from keras.layers import Activation, Dense
+from keras.layers.recurrent import LSTM
 
 
-def load_data():
-	x_train = []
-	y_train = np.array([np.sin(np.arange(0, 4 * math.pi, 0.1))])
-	y_train = y_train.transpose()
-	for i in range(len(y_train) - 10):
-		x_train.append(y_train[i:i+10])
-	x_train = np.array(x_train)
-	y_train = y_train[10:]
-	return (x_train, y_train)
+# 実際のところ不必要
+cycle_number = 2
+sampling_width = 0.1
+len_sequence = 10
+
+
+def gen_values():
+	# 正弦波の離散データを生成
+	values = np.arange(-len_sequence * sampling_width, 2 * np.pi * cycle_number, sampling_width)
+	values = np.sin(values)
+	return values
 
 
 def print_predict():
-	point = []
 	json_data = open('model.json').read()
 	model = model_from_json(json_data)
 	model.load_weights('weights.hdf5')
+	print('Enter the number of predict values (integer)')
+	value = input('>> ').rstrip()
 	print('Start predicting')
-	(x_train, y_train) = load_data()
-	p_data = np.array([x_train[0]])
-	p_value = model.predict(p_data)
-	point.append(p_value[0])
-	for i in range(1, 200):
-		p_data = np.append(p_data, p_value)
-		print(p_data.shape)
-		p_data = np.array([p_data[1:]])
-		print(p_data.shape)
-		p_data = p_data.transpose()
-		print(p_data.shape)
-		p_data = np.array([p_data])
-		print(p_data.shape)
-		p_value = model.predict(p_data)
-		point.append(p_value[0])
-	plt.plot(point)
+	results = np.array([])
+	x_test = gen_values()
+	# ミニバッチ作成
+	x_test = x_test[0:len_sequence]
+	# 次元を合わせる
+	x_test = x_test.reshape(1, len_sequence, 1)
+	for i in range(int(value)):
+		# 予測値から更に未来の状態を予測
+		result = model.predict(x_test)
+		results = np.append(results, result)
+		x_test = np.append(x_test, result)
+		x_test = x_test[1:]
+		x_test = x_test.reshape(1, len_sequence, 1)
+	plt.plot(results)
 	plt.show()
 
 if __name__ == '__main__':

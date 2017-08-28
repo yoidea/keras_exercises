@@ -1,14 +1,15 @@
 import numpy as np
-import math
-import random
 import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Activation, Dense
 from keras.layers.recurrent import LSTM
 
 
-batch_size = 5
+batch_size = 10
 epochs = 50
+cycle_number = 2
+sampling_width = 0.1
+len_sequence = 10
 
 
 def build_model():
@@ -20,32 +21,42 @@ def build_model():
 	return model
 
 
+def gen_values():
+	# 正弦波の離散データを生成
+	values = np.arange(0, 2 * np.pi * cycle_number, sampling_width)
+	values = np.sin(values)
+	return values
+
+
 def load_data():
-	x_train = []
-	y_train = np.array([np.sin(np.arange(0, 4 * math.pi, 0.1))])
-	y_train = y_train.transpose()
-	print(y_train.shape)
-	plt.plot(y_train)
-	plt.show()
-	for i in range(len(y_train) - 10):
-		x_train.append(y_train[i:i+10])
-	x_train = np.array(x_train)
-	print(x_train.shape)
-	y_train = y_train[10:]
-	print(y_train.shape)
+	values = gen_values()
+	# (n, 1)に変換
+	y_train = values.reshape(len(values), 1)
+	# 頭出し
+	y_train = y_train[len_sequence:]
+	x_train = np.array([])
+	# 始点をずらしながらミニバッチを生成
+	for i in range(len(values) - len_sequence):
+		x_train = np.append(x_train, values[i:i+len_sequence])
+	# (n, len_sequence, 1)に変換
+	x_train = x_train.reshape(len(values) - len_sequence, len_sequence, 1)
 	return (x_train, y_train)
 
 
 def main():
-	print('loading datas')
+	print('Loading datas')
 	(x_train, y_train) = load_data()
+	print('Show training datas')
+	plt.plot(y_train)
+	plt.show()
 	print('Building a model')
 	model = build_model()
 	model.compile(loss='mse', optimizer='rmsprop')
 	print('Start learning')
 	model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs)
-	p_value = model.predict(x_train)
-	plt.plot(p_value)
+	result = model.predict(x_train)
+	print('Show results')
+	plt.plot(result)
 	plt.show()
 	print('Save model as model.json')
 	json_data = model.to_json()
