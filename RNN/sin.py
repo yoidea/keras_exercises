@@ -22,18 +22,16 @@ def build_model():
 
 def load_data():
 	x_train = []
-	y_train = []
-	for i in range(100):
-		y_train.append([math.sin(2 * math.pi * i / 50)])
-	y_train = np.array(y_train)
+	y_train = np.array([np.sin(np.arange(0, 4 * math.pi, 0.1))])
+	y_train = y_train.transpose()
 	print(y_train.shape)
 	plt.plot(y_train)
 	plt.show()
-	for i in range(90):
+	for i in range(len(y_train) - 10):
 		x_train.append(y_train[i:i+10])
 	x_train = np.array(x_train)
 	print(x_train.shape)
-	y_train = y_train[9:99]
+	y_train = y_train[10:]
 	print(y_train.shape)
 	return (x_train, y_train)
 
