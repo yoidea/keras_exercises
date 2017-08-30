@@ -15,7 +15,7 @@ len_sequence = 10
 def build_model():
 	# 再帰NNを作成
 	model = Sequential()
-	model.add(LSTM(10, input_shape=(10, 1)))
+	model.add(LSTM(10, input_shape=(len_sequence, 1)))
 	model.add(Dense(1))
 	model.add(Activation('linear'))
 	return model

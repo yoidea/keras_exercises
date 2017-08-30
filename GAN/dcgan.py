@@ -1,84 +1,88 @@
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Activation, Dense, Dropout, Conv2D, Flatten, MaxPooling2D
-from keras.layers.advanced_activations import LeakyReLU
+from keras.layers import Activation, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten
+from keras.layers import Reshape, BatchNormalization
 from keras.optimizers import SGD
-# from keras.utils.np_utils import to_categorical
+from keras.datasets import mnist
 from PIL import Image
-import os
 
 
-input_dim = 10
-batch_size = 5
-epochs = 500
-
-
-def generator():
-	# Generatorを構築
+def build_generator():
 	model = Sequential()
-	model.add(Dense(256, input_dim=100))
-	model.add(LeakyReLU(0.2))
-	model.add(Dense(512))
-	model.add(LeakyReLU(0.2))
-	model.add(Dense(1024))
-	model.add(Activation('sigmoid'))
-	# 不要かもしれない
-	sgd = SGD(lr=0.1, momentum=0.3, decay=1e-5)
-	model.compile(loss="binary_crossentropy", optimizer=sgd)
+	model.add(Dense(input_dim=100, output_dim=1024))
+	model.add(Activation('tanh'))
+	model.add(Dense(128*7*7))
+	model.add(BatchNormalization())
+	model.add(Activation('tanh'))
+	model.add(Reshape((7, 7, 128), input_shape=(128*7*7,)))
+	model.add(UpSampling2D(size=(2, 2)))
+	model.add(Conv2D(64, (5, 5), padding='same'))
+	model.add(Activation('tanh'))
+	model.add(UpSampling2D(size=(2, 2)))
+	model.add(Conv2D(1, (5, 5), padding='same'))
+	model.add(Activation('tanh'))
 	return model
 
 
-def discriminator():
-	# Discriminatorを構築
+def build_discriminator():
 	model = Sequential()
-	model.add(Dense(1024, input_dim=10))
-	model.add(LeakyReLU(0.2))
-	model.add(Dense(512))
-	model.add(LeakyReLU(0.2))
-	model.add(Dense(256))
-	model.add(LeakyReLU(0.2))
+	model.add(Conv2D(64, (5, 5), padding='same', input_shape=(28, 28, 1)))
+	model.add(Activation('tanh'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Conv2D(128, (5, 5)))
+	model.add(Activation('tanh'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Flatten())
+	model.add(Dense(1024))
+	model.add(Activation('tanh'))
 	model.add(Dense(1))
 	model.add(Activation('sigmoid'))
-	sgd = SGD(lr=0.1, momentum=0.1, decay=1e-5)
-	model.compile(loss="binary_crossentropy", optimizer=sgd)
 	return model
 
 
-def build_GAN():
-	# Generative Adversarial Network
-	G = generator()
-	D = discriminator()
+def generator_containing_discriminator(G, D):
 	model = Sequential()
 	model.add(G)
-	D.model.trainable = False
+	D.trainable = False
 	model.add(D)
 	return model
 
 
-def load_data():
-	x_train = []
-	y_train = []
-	# numpy型に変換
-	x_train = np.array(x_train)
-	y_train = np.array(y_train)
-	return (x_train, y_train)
+def train(BATCH_SIZE):
+	(X_train, y_train), (X_test, y_test) = mnist.load_data()
+	X_train = (X_train.astype(np.float32) - 127.5)/127.5
+	X_train = X_train[:, :, :, None]
+	X_test = X_test[:, :, :, None]
+	# X_train = X_train.reshape((X_train.shape, 1) + X_train.shape[1:])
+	D = build_discriminator()
+	G = build_generator()
+	D_on_G = generator_containing_discriminator(G, D)
+	d_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+	g_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+	G.compile(loss='binary_crossentropy', optimizer="SGD")
+	D_on_G.compile(loss='binary_crossentropy', optimizer=g_optim)
+	D.trainable = True
+	D.compile(loss='binary_crossentropy', optimizer=d_optim)
+	for epoch in range(100):
+		print("Epoch is", epoch)
+		print("Number of batches", int(X_train.shape[0]/BATCH_SIZE))
+		for index in range(int(X_train.shape[0]/BATCH_SIZE)):
+			noise = np.random.uniform(-1, 1, size=(BATCH_SIZE, 100))
+			image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
+			generated_images = G.predict(noise, verbose=0)
+			X = np.concatenate((image_batch, generated_images))
+			y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
+			d_loss = D.train_on_batch(X, y)
+			print("batch %d d_loss : %f" % (index, d_loss))
+			noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
+			D.trainable = False
+			g_loss = D_on_G.train_on_batch(noise, [1] * BATCH_SIZE)
+			D.trainable = True
+			print("batch %d g_loss : %f" % (index, g_loss))
+			if index % 10 == 9:
+				G.save_weights('generator.hdf5')
+				D.save_weights('discriminator.hdf5')
 
 
-def main():
-	print('Loading datas')
-	(x_train, y_train) = load_data()
-	print('Building a model')
-	model = build_GAN()
-	sgd = SGD(0.1, momentum=0.3)
-	model.compile(loss="binary_crossentropy", optimizer=sgd)
-	print('Start learning')
-	model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs)
-	print('Save model as model.json')
-	json_data = model.to_json()
-	open('model.json', 'w').write(json_data)
-	print('Save weights as weights.hdf5')
-	model.save_weights('weights.hdf5')
-
-
-if __name__ == '__main__':
-	main()
+if __name__ == "__main__":
+	train(BATCH_SIZE=24)
