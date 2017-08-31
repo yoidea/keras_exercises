@@ -8,7 +8,7 @@ from keras.datasets import mnist
 
 def build_generator():
 	model = Sequential()
-	model.add(Dense(input_dim=100, output_dim=1024))
+	model.add(Dense(1024, input_dim=100))
 	model.add(Activation('tanh'))
 	model.add(Dense(128*7*7))
 	model.add(BatchNormalization())
@@ -48,6 +48,7 @@ def build_GAN(G, D):
 
 def train(epochs, batch_size):
 	(x_train, y_train), (x_test, y_test) = mnist.load_data()
+	x_train = x_train.reshape(len(x_train), 28, 28, 1)
 	sgd1 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
 	sgd2 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
 
@@ -63,9 +64,12 @@ def train(epochs, batch_size):
 	D.compile(loss='binary_crossentropy', optimizer=sgd2)
 	for epoch in range(epochs):
 		noise = np.random.uniform(-1, 1, size=(batch_size, 100))
-		real_images = x_train[epoch*batch_size:(epoch+1)*batch_size]
+		real_images = x_train[epochs*batch_size:(epochs+1)*batch_size]
 		gen_images = G.predict(noise)
+		print(real_images.shape)
+		print(gen_images.shape)
 		images = np.concatenate((real_images, gen_images))
+		print(images.shape)
 		answer = [1] * batch_size + [0] * batch_size
 		d_loss = D.train_on_batch(images, answer)
 		print("batch %d d_loss : %f" % (epoch, d_loss))
