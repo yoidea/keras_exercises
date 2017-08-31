@@ -13,13 +13,13 @@ def build_generator():
 	model.add(Dense(128*7*7))
 	model.add(BatchNormalization())
 	model.add(Activation('tanh'))
-	model.add(Reshape((7, 7, 128), input_shape=(128*7*7)))
+	model.add(Reshape((7, 7, 128)))
 	model.add(UpSampling2D(size=(2, 2)))
 	model.add(Conv2D(64, (5, 5), padding='same'))
 	model.add(Activation('tanh'))
 	model.add(UpSampling2D(size=(2, 2)))
 	model.add(Conv2D(1, (5, 5), padding='same'))
-	model.add(Activation('tanh'))
+	model.add(Activation('sigmoid'))
 	return model
 
 
@@ -49,6 +49,7 @@ def build_GAN(G, D):
 def train(epochs, batch_size):
 	(x_train, y_train), (x_test, y_test) = mnist.load_data()
 	x_train = x_train.reshape(len(x_train), 28, 28, 1)
+	x_train = x_train / 255
 	sgd1 = SGD(lr=0.005, momentum=0.9, nesterov=True)
 	sgd2 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
 	G = build_generator()
@@ -83,4 +84,4 @@ def train(epochs, batch_size):
 
 
 if __name__ == '__main__':
-	train(epochs=10000, batch_size=128)
+	train(epochs=10000, batch_size=24)
