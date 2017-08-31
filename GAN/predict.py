@@ -95,4 +95,4 @@ def generate(BATCH_SIZE, nice=False):
 
 
 if __name__ == '__main__':
-	generate(BATCH_SIZE=24)
+	generate(BATCH_SIZE=128)

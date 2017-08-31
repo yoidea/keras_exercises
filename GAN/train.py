@@ -13,7 +13,7 @@ def build_generator():
 	model.add(Dense(128*7*7))
 	model.add(BatchNormalization())
 	model.add(Activation('tanh'))
-	model.add(Reshape((7, 7, 128), input_shape=(128*7*7,)))
+	model.add(Reshape((7, 7, 128), input_shape=(128*7*7)))
 	model.add(UpSampling2D(size=(2, 2)))
 	model.add(Conv2D(64, (5, 5), padding='same'))
 	model.add(Activation('tanh'))
@@ -49,13 +49,13 @@ def build_GAN(G, D):
 def train(epochs, batch_size):
 	(x_train, y_train), (x_test, y_test) = mnist.load_data()
 	x_train = x_train.reshape(len(x_train), 28, 28, 1)
-	sgd1 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+	sgd1 = SGD(lr=0.005, momentum=0.9, nesterov=True)
 	sgd2 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
-
 	G = build_generator()
 	D = build_discriminator()
 	GAN = build_GAN(G, D)
-	G.compile(loss='binary_crossentropy', optimizer="SGD")
+	# ↓これは要らないのではないか
+	# G.compile(loss='binary_crossentropy', optimizer="SGD")
 	# 判別器を判別に使うから学習は止める
 	D.trainable = False
 	GAN.compile(loss='binary_crossentropy', optimizer=sgd1)
@@ -64,24 +64,23 @@ def train(epochs, batch_size):
 	D.compile(loss='binary_crossentropy', optimizer=sgd2)
 	for epoch in range(epochs):
 		noise = np.random.uniform(-1, 1, size=(batch_size, 100))
-		real_images = x_train[epochs*batch_size:(epochs+1)*batch_size]
+		index = (epochs * batch_size) % len(x_train)
+		real_images = x_train[index:index+batch_size]
 		gen_images = G.predict(noise)
-		print(real_images.shape)
-		print(gen_images.shape)
 		images = np.concatenate((real_images, gen_images))
-		print(images.shape)
-		answer = [1] * batch_size + [0] * batch_size
-		d_loss = D.train_on_batch(images, answer)
-		print("batch %d d_loss : %f" % (epoch, d_loss))
+		answer = np.concatenate((np.ones(batch_size), np.zeros(batch_size)))
+		D_loss = D.train_on_batch(images, answer)
 		noise = np.random.uniform(-1, 1, (batch_size, 100))
 		D.trainable = False
-		g_loss = GAN.train_on_batch(noise, [1] * batch_size)
+		answer = np.ones(batch_size)
+		G_loss = GAN.train_on_batch(noise, answer)
 		D.trainable = True
-		print("batch %d g_loss : %f" % (epoch, g_loss))
+		print('Epoch ' + str(epoch) + '/' + str(epochs))
+		print('G loss: ' + str(G_loss) + ' - D loss: ' + str(D_loss))
 		if epoch % 100 == 0:
 			G.save_weights('generator.hdf5')
 			D.save_weights('discriminator.hdf5')
 
 
 if __name__ == '__main__':
-	train(epochs=10, batch_size=128)
+	train(epochs=10000, batch_size=128)
