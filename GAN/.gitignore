@@ -1,3 +1,4 @@
 .DS_Store
-model.json
+*.json
 *.hdf5
+*.png
