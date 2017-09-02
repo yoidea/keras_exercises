@@ -12,6 +12,8 @@ import math
 def build_GAN(G, D):
 	model = Sequential()
 	model.add(G)
+	# 判別器を判別に使うために学習は止める
+	D.trainable = False
 	model.add(D)
 	return model
 

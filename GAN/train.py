@@ -42,6 +42,8 @@ def build_discriminator():
 def build_GAN(G, D):
 	model = Sequential()
 	model.add(G)
+	# 判別器を判別に使うために学習は止める
+	D.trainable = False
 	model.add(D)
 	return model
 
@@ -50,23 +52,19 @@ def train(epochs, batch_size):
 	(x_train, y_train), (x_test, y_test) = mnist.load_data()
 	x_train = x_train.reshape(len(x_train), 28, 28, 1)
 	x_train = x_train / 255
-	sgd1 = SGD(lr=0.002, momentum=0.9, nesterov=True)
-	sgd2 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+	sgd1 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+	sgd2 = SGD(lr=0.002, momentum=0.9, nesterov=True)
 	G = build_generator()
+	# ↓これは要らないのではないか
+	# G.compile(loss='binary_crossentropy', optimizer="SGD")
 	D = build_discriminator()
+	D.compile(loss='binary_crossentropy', optimizer=sgd1)
 	GAN = build_GAN(G, D)
+	GAN.compile(loss='binary_crossentropy', optimizer=sgd2)
 	json_data = G.to_json()
 	open('G_model.json', 'w').write(json_data)
 	json_data = D.to_json()
 	open('D_model.json', 'w').write(json_data)
-	# ↓これは要らないのではないか
-	# G.compile(loss='binary_crossentropy', optimizer="SGD")
-	# 判別器を判別に使うから学習は止める
-	D.trainable = False
-	GAN.compile(loss='binary_crossentropy', optimizer=sgd1)
-	# 判別器の学習
-	D.trainable = True
-	D.compile(loss='binary_crossentropy', optimizer=sgd2)
 	for epoch in range(epochs):
 		noise = np.random.uniform(-1, 1, size=(batch_size, 100))
 		# トレーニングデータを順に与える
@@ -77,10 +75,10 @@ def train(epochs, batch_size):
 		answer = np.concatenate((np.ones(batch_size), np.zeros(batch_size)))
 		D_loss = D.train_on_batch(images, answer)
 		noise = np.random.uniform(-1, 1, (batch_size, 100))
-		D.trainable = False
+		# D.trainable = False
 		answer = np.ones(batch_size)
 		G_loss = GAN.train_on_batch(noise, answer)
-		D.trainable = True
+		# D.trainable = True
 		print('Epoch ' + str(epoch) + '/' + str(epochs))
 		print('G loss: ' + str(G_loss) + ' - D loss: ' + str(D_loss))
 		if epoch % 100 == 0:
