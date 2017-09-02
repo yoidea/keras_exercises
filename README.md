@@ -58,16 +58,28 @@ Using TensorFlow backend.
 
 ### RNN
 正弦波を予測して無限に波形を生成する。
-1. まず、`sin.py`を実行する。（突然グラフを描画するがびっくりしない）
+1. まず、`sin.py`を実行する。（突然グラフを描画するが驚かないように注意）
 1. 学習が完了したら`predict.py`実行する。
 1. 生成する波形のサンプル数を与えると予測値からグラフを描画する。
 ```bash
 python sin.py
 ...
+python predict.py
 Enter the number of predict values (integer)
 >> 1000
 Start predicting
 ```
 
 ### GAN
-**未完成**
+mnistのデータを学習して、類似データを生成する。
+1. `train.py`を実行する。（mnistデータは自動ダウンロード）
+1. 学習が完了したら`predict.py`を実行する。
+1. データは`gen/result*.png`として生成される。
+```bash
+python train.py
+...
+python predict.py
+...
+ls gen/
+result0.png   result1.png  result2.png  . . .  result23.png
+```
