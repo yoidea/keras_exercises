@@ -69,8 +69,8 @@ Enter the number of predict values (integer)
 >> 1000
 Start predicting
 ```
-![RNN input](img/RNNin)
-![RNN output](img/RNNout)
+![RNN input](https://github.com/yoidea/keras_exercises/blob/master/img/RNNin.png)
+![RNN output](https://github.com/yoidea/keras_exercises/blob/master/img/RNNout.png)
 
 ### GAN
 mnistのデータを学習して、類似データを生成する。
@@ -85,4 +85,4 @@ python predict.py
 ls gen/
 result0.png   result1.png  result2.png  . . .  result23.png
 ```
-![GAN output](img/GANout)
+![GAN output](https://github.com/yoidea/keras_exercises/blob/master/img/GANout.png)
