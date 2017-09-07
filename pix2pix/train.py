@@ -1,14 +1,19 @@
+import os
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Activation, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten
 from keras.layers import Reshape, BatchNormalization
 from keras.optimizers import SGD
+from PIL import Image
+
+
+image_size = (52, 52)
 
 
 def build_generator():
 	model = Sequential()
-	model.add(Dense(1024), input_shape=(52, 52, 3))
-	model.add(Flatten())
+	model.add(Flatten(input_shape=(52, 52, 3)))
+	model.add(Dense(1024))
 	model.add(Dense(128*13*13))
 	model.add(BatchNormalization())
 	model.add(Activation('tanh'))
@@ -49,6 +54,7 @@ def build_GAN(G, D):
 
 def load_data():
 	x_train = np.array([])
+	y_train = np.array([])
 	counter = 0
 	for file in os.listdir('images/'):
 		# 拡張子が.jpgでなければ
@@ -58,16 +64,24 @@ def load_data():
 		image = image.resize(image_size)
 		x_train = np.append(x_train, image)
 		counter = counter + 1
+	for file in os.listdir('converted/'):
+		# 拡張子が.jpgでなければ
+		if os.path.splitext(file)[1] != '.jpg':
+			continue
+		image = Image.open('converted/' + file)
+		image = image.resize(image_size)
+		y_train = np.append(y_train, image)
+		# counter = counter + 1
 	# 正規化する必要あり
 	x_train = x_train / 255
+	y_train = y_train / 255
 	x_train = x_train.reshape(counter, image_size[0], image_size[1], 3)
-	return x_train
+	y_train = y_train.reshape(counter, image_size[0], image_size[1], 3)
+	return (x_train, y_train)
 
 
 def train(epochs, batch_size):
-	(x_train, y_train), (x_test, y_test) = mnist.load_data()
-	x_train = x_train.reshape(len(x_train), 28, 28, 1)
-	x_train = x_train / 255
+	(x_train, y_train) = load_data()
 	sgd1 = SGD(lr=0.0005, momentum=0.9, nesterov=True)
 	sgd2 = SGD(lr=0.002, momentum=0.9, nesterov=True)
 	G = build_generator()
@@ -82,17 +96,19 @@ def train(epochs, batch_size):
 	json_data = D.to_json()
 	open('D_model.json', 'w').write(json_data)
 	for epoch in range(epochs):
-		noise = np.random.uniform(-1, 1, size=(batch_size, 100))
 		# トレーニングデータを順に与える
 		index = (epochs * batch_size) % len(x_train)
 		real_images = x_train[index:index+batch_size]
-		gen_images = G.predict(noise)
-		images = np.concatenate((real_images, gen_images))
+		real_convert = y_train[index:index+batch_size]
+		gen_convert = G.predict(real_images)
+		real_pair = np.concatenate((real_images, real_convert))
+		fake_pair = np.concatenate((real_images, gen_convert))
+		pairs = np.concatenate((real_pair, fake_pair))
+		print(pairs.shape)
 		answer = np.concatenate((np.ones(batch_size), np.zeros(batch_size)))
-		D_loss = D.train_on_batch(images, answer)
-		noise = np.random.uniform(-1, 1, (batch_size, 100))
+		D_loss = D.train_on_batch(pairs, answer)
 		answer = np.ones(batch_size)
-		G_loss = GAN.train_on_batch(noise, answer)
+		G_loss = GAN.train_on_batch(real_images, answer)
 		print('Epoch ' + str(epoch) + '/' + str(epochs))
 		print('G loss: ' + str(G_loss) + ' - D loss: ' + str(D_loss))
 		if epoch % 100 == 0:
