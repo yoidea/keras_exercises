@@ -109,7 +109,7 @@ def train(epochs, batch_size):
 		answer = np.concatenate((np.ones(batch_size), np.zeros(batch_size)))
 		D_loss = D.train_on_batch(pairs, answer)
 		answer = np.ones(batch_size)
-		G_loss = GAN.train_on_batch(real_images, answer)
+		G_loss = GAN.train_on_batch(real_pair, answer)
 		print('Epoch ' + str(epoch) + '/' + str(epochs))
 		print('G loss: ' + str(G_loss) + ' - D loss: ' + str(D_loss))
 		if epoch % 10 == 0:
