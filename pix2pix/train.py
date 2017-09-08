@@ -101,20 +101,21 @@ def train(epochs, batch_size):
 		real_images = x_train[index:index+batch_size]
 		real_convert = y_train[index:index+batch_size]
 		gen_convert = G.predict(real_images)
-		real_pair = np.concatenate((real_images, real_convert))
-		fake_pair = np.concatenate((real_images, gen_convert))
+		# real_pair = np.concatenate((real_images, real_convert))
+		# fake_pair = np.concatenate((real_images, gen_convert))
+		real_pair = real_images + real_convert
+		fake_pair = real_images + gen_convert
 		pairs = np.concatenate((real_pair, fake_pair))
-		print(pairs.shape)
 		answer = np.concatenate((np.ones(batch_size), np.zeros(batch_size)))
 		D_loss = D.train_on_batch(pairs, answer)
 		answer = np.ones(batch_size)
 		G_loss = GAN.train_on_batch(real_images, answer)
 		print('Epoch ' + str(epoch) + '/' + str(epochs))
 		print('G loss: ' + str(G_loss) + ' - D loss: ' + str(D_loss))
-		if epoch % 100 == 0:
+		if epoch % 10 == 0:
 			G.save_weights('G_weights.hdf5')
 			D.save_weights('D_weights.hdf5')
 
 
 if __name__ == '__main__':
-	train(epochs=10000, batch_size=24)
+	train(epochs=10000, batch_size=2)

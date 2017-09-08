@@ -2,3 +2,6 @@
 *.json
 *.hdf5
 *.png
+images/
+converted/
+gen/
