@@ -3,6 +3,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Activation, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten
 from keras.layers import Reshape, BatchNormalization
+from keras.layers import Concatenate
 from keras.optimizers import SGD
 from PIL import Image
 
@@ -11,13 +12,16 @@ image_size = (52, 52)
 
 
 def build_generator():
+	# U-netを構築
 	model = Sequential()
-	model.add(Flatten(input_shape=(52, 52, 3)))
-	model.add(Dense(1024))
-	model.add(Dense(128*13*13))
-	model.add(BatchNormalization())
+	model.add(Conv2D(32, (5, 5), padding='same', input_shape=(52, 52, 3)))
 	model.add(Activation('tanh'))
-	model.add(Reshape((13, 13, 128)))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Conv2D(64, (5, 5), padding='same'))
+	model.add(Activation('tanh'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+	model.add(Conv2D(128, (5, 5), padding='same'))
+	model.add(Activation('tanh'))
 	model.add(UpSampling2D(size=(2, 2)))
 	model.add(Conv2D(64, (5, 5), padding='same'))
 	model.add(Activation('tanh'))
@@ -27,17 +31,26 @@ def build_generator():
 	return model
 
 
-def build_discriminator():
+def build_CNN():
 	model = Sequential()
-	model.add(Conv2D(64, (5, 5), padding='same', input_shape=(52, 52, 3)))
+	model.add(Conv2D(64, (5, 5), input_shape=(52, 52, 3)))
 	model.add(Activation('tanh'))
 	model.add(MaxPooling2D(pool_size=(2, 2)))
 	model.add(Conv2D(128, (5, 5)))
 	model.add(Activation('tanh'))
 	model.add(MaxPooling2D(pool_size=(2, 2)))
 	model.add(Flatten())
-	model.add(Dense(1024))
+	model.add(Dense(512))
 	model.add(Activation('tanh'))
+	return model
+
+
+def build_discriminator():
+	R = build_CNN()
+	F = build_CNN()
+	P = Concatenate([R, F])
+	model = Sequential()
+	model.add(P)
 	model.add(Dense(1))
 	model.add(Activation('sigmoid'))
 	return model
