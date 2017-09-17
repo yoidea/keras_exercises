@@ -3,7 +3,7 @@ from keras.models import Sequential
 from keras.layers import Activation, Dense, Dropout, Conv2D, Flatten, MaxPooling2D
 from keras.optimizers import Adagrad
 from keras.optimizers import Adam
-# from keras.utils.np_utils import to_categorical
+from keras.utils.np_utils import to_categorical
 from PIL import Image
 import os
 
@@ -39,9 +39,9 @@ def load_data():
 	y_train = []
 	for file in os.listdir('images/'):
 		if file[:3] == 'coc':
-			label = [1, 0]
+			label = 0
 		elif file[:3] == 'bee':
-			label = [0, 1]
+			label = 1
 		else:
 			continue
 		image = Image.open('images/' + file)
@@ -51,6 +51,7 @@ def load_data():
 		y_train.append(label)
 	# numpy型に変換
 	x_train = np.array(x_train)
+	y_train = to_categorical(y_train)
 	y_train = np.array(y_train)
 	return (x_train, y_train)
 
